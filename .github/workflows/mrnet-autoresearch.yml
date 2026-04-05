@@ -6,7 +6,7 @@ on:
       iterations:
         description: "Number of autoresearch iterations to run"
         required: true
-        default: "1"
+        default: "24"
         type: string
       run_tag:
         description: "Optional run tag prefix"
@@ -29,7 +29,7 @@ on:
 jobs:
   run-experiments:
     runs-on: [self-hosted, macOS, ARM64]
-    timeout-minutes: 240
+    timeout-minutes: 1800
     defaults:
       run:
         shell: bash
