@@ -1,0 +1,135 @@
+name: MRNet Autoresearch
+
+on:
+  workflow_dispatch:
+    inputs:
+      experiment_group:
+        description: "Experiment preset group to run"
+        required: true
+        default: "short"
+        type: choice
+        options:
+          - short
+          - full
+          - all
+      run_tag:
+        description: "Optional run tag prefix"
+        required: false
+        default: ""
+        type: string
+      only:
+        description: "Optional space-separated experiment names"
+        required: false
+        default: ""
+        type: string
+      data_root:
+        description: "Optional MRNet dataset path on the self-hosted runner"
+        required: false
+        default: ""
+        type: string
+      extra_train_args:
+        description: "Optional train.py overrides in KEY=VALUE form, space-separated"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  run-experiments:
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+        working-directory: MRNet-AI-assited-diagnosis-of-knee-injuries
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ..
+
+      - name: Resolve dataset path
+        id: dataset
+        run: |
+          DATA_ROOT="${{ vars.MRNET_DATA_ROOT }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.data_root }}" ]; then
+            DATA_ROOT="${{ inputs.data_root }}"
+          fi
+          if [ -z "$DATA_ROOT" ]; then
+            DATA_ROOT="$PWD/MRNet-v1.0"
+          fi
+          if [ ! -d "$DATA_ROOT" ]; then
+            echo "MRNet dataset path not found: $DATA_ROOT" >&2
+            exit 1
+          fi
+          echo "data_root=$DATA_ROOT" >> "$GITHUB_OUTPUT"
+
+      - name: Run autoresearch batch
+        run: |
+          mkdir -p ci_results experiment_logs
+          RUN_TAG="${{ github.event.inputs.run_tag }}"
+          if [ -z "$RUN_TAG" ]; then
+            RUN_TAG="gha-${GITHUB_RUN_ID}"
+          fi
+          GROUP="${{ github.event.inputs.experiment_group }}"
+          if [ -z "$GROUP" ]; then
+            GROUP="short"
+          fi
+
+          cmd=(
+            python experiment_runner.py
+            --group "$GROUP"
+            --run_tag "$RUN_TAG"
+            --results_file "ci_results/results.tsv"
+            --summary_file "ci_results/summary.md"
+          )
+
+          overrides=("data_root=${{ steps.dataset.outputs.data_root }}")
+
+          if [ -n "${{ github.event.inputs.only }}" ]; then
+            read -r -a only_items <<< "${{ github.event.inputs.only }}"
+            cmd+=(--only "${only_items[@]}")
+          fi
+
+          if [ -n "${{ github.event.inputs.extra_train_args }}" ]; then
+            read -r -a override_items <<< "${{ github.event.inputs.extra_train_args }}"
+            overrides+=("${override_items[@]}")
+          fi
+
+          cmd+=(--set "${overrides[@]}")
+
+          "${cmd[@]}"
+
+      - name: Publish summary
+        if: always()
+        run: |
+          if [ -f "ci_results/summary.md" ]; then
+            cat "ci_results/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "ci_results/results.tsv" ]; then
+            {
+              echo
+              echo '```tsv'
+              cat "ci_results/results.tsv"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload experiment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mrnet-autoresearch-${{ github.run_id }}
+          path: |
+            MRNet-AI-assited-diagnosis-of-knee-injuries/ci_results
+            MRNet-AI-assited-diagnosis-of-knee-injuries/experiment_logs
+          if-no-files-found: warn

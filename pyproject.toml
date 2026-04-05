@@ -1,0 +1,16 @@
+[project]
+name = "mrnet"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "geomloss>=0.2.6",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.7.2",
+    "tensorboardx>=2.6.4",
+    "torch>=2.9.1",
+    "torchaudio>=2.9.1",
+    "torchsample>=0.1.0",
+    "torchvision>=0.24.1",
+]
