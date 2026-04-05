@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       iterations:
-        description: "Number of short autoresearch iterations to run"
+        description: "Number of autoresearch iterations to run"
         required: true
-        default: "3"
+        default: "1"
         type: string
       run_tag:
         description: "Optional run tag prefix"
@@ -29,7 +29,7 @@ on:
 jobs:
   run-experiments:
     runs-on: [self-hosted, macOS, ARM64]
-    timeout-minutes: 45
+    timeout-minutes: 240
     defaults:
       run:
         shell: bash
