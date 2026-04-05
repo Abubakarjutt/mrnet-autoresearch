@@ -14,3 +14,8 @@ Use the nested project README for training details:
 cd /Users/Apple/Workdir/mrnet/MRNet-AI-assited-diagnosis-of-knee-injuries
 ../.venv/bin/python train.py --prefix_name my_run --epochs 20 --model_type advanced --vit_model vit_b_16
 ```
+
+Autonomous architecture improvement is now driven by:
+
+- [program.md](/Users/Apple/Workdir/mrnet/program.md)
+- [autoresearch_loop.py](/Users/Apple/Workdir/mrnet/MRNet-AI-assited-diagnosis-of-knee-injuries/autoresearch_loop.py)

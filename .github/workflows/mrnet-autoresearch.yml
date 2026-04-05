@@ -3,22 +3,13 @@ name: MRNet Autoresearch
 on:
   workflow_dispatch:
     inputs:
-      experiment_group:
-        description: "Experiment preset group to run"
+      iterations:
+        description: "Number of short autoresearch iterations to run"
         required: true
-        default: "short"
-        type: choice
-        options:
-          - short
-          - full
-          - all
+        default: "3"
+        type: string
       run_tag:
         description: "Optional run tag prefix"
-        required: false
-        default: ""
-        type: string
-      only:
-        description: "Optional space-separated experiment names"
         required: false
         default: ""
         type: string
@@ -27,8 +18,8 @@ on:
         required: false
         default: ""
         type: string
-      extra_train_args:
-        description: "Optional train.py overrides in KEY=VALUE form, space-separated"
+      state_dir:
+        description: "Optional persistent autoresearch state directory on the runner"
         required: false
         default: ""
         type: string
@@ -84,39 +75,34 @@ jobs:
 
       - name: Run autoresearch batch
         run: |
-          mkdir -p ci_results experiment_logs
+          mkdir -p ci_results
           RUN_TAG="${{ github.event.inputs.run_tag }}"
           if [ -z "$RUN_TAG" ]; then
             RUN_TAG="gha-${GITHUB_RUN_ID}"
           fi
-          GROUP="${{ github.event.inputs.experiment_group }}"
-          if [ -z "$GROUP" ]; then
-            GROUP="short"
+
+          ITERATIONS="${{ github.event.inputs.iterations }}"
+          if [ -z "$ITERATIONS" ]; then
+            ITERATIONS="3"
+          fi
+
+          STATE_DIR="${{ github.event.inputs.state_dir }}"
+          if [ -z "$STATE_DIR" ]; then
+            STATE_DIR="$HOME/.mrnet_autoresearch"
           fi
 
           cmd=(
-            python3 experiment_runner.py
-            --group "$GROUP"
-            --run_tag "$RUN_TAG"
-            --results_file "ci_results/results.tsv"
+            python3 autoresearch_loop.py
+            --iterations "$ITERATIONS"
+            --state_dir "$STATE_DIR"
+            --data_root "${{ steps.dataset.outputs.data_root }}"
             --summary_file "ci_results/summary.md"
           )
 
-          overrides=("data_root=${{ steps.dataset.outputs.data_root }}")
-
-          if [ -n "${{ github.event.inputs.only }}" ]; then
-            read -r -a only_items <<< "${{ github.event.inputs.only }}"
-            cmd+=(--only "${only_items[@]}")
-          fi
-
-          if [ -n "${{ github.event.inputs.extra_train_args }}" ]; then
-            read -r -a override_items <<< "${{ github.event.inputs.extra_train_args }}"
-            overrides+=("${override_items[@]}")
-          fi
-
-          cmd+=(--set "${overrides[@]}")
-
           "${cmd[@]}"
+
+          cp "$STATE_DIR/results.tsv" "ci_results/results.tsv"
+          cp "$STATE_DIR/best_config.json" "ci_results/best_config.json"
 
       - name: Publish summary
         if: always()
