@@ -101,8 +101,12 @@ jobs:
 
           "${cmd[@]}"
 
-          cp "$STATE_DIR/results.tsv" "ci_results/results.tsv"
-          cp "$STATE_DIR/best_config.json" "ci_results/best_config.json"
+          if [ -f "$STATE_DIR/results.tsv" ]; then
+            cp "$STATE_DIR/results.tsv" "ci_results/results.tsv"
+          fi
+          if [ -f "$STATE_DIR/best_config.json" ]; then
+            cp "$STATE_DIR/best_config.json" "ci_results/best_config.json"
+          fi
 
       - name: Publish summary
         if: always()
