@@ -1,6 +1,6 @@
 # Workspace Program
 
-This workspace is set up to mimic the spirit of Karpathy's `autoresearch`, but for MRNet.
+This workspace is set up to follow the same self-improvement principles as Karpathy's `autoresearch`, but for MRNet.
 
 ## Active Loop
 
@@ -16,9 +16,10 @@ and is documented in:
 
 The system should continuously improve the model architecture by:
 
-1. reading the current best saved architecture
-2. mutating a few architecture choices
-3. running a short experiment
-4. advancing only if validation AUC improves
+1. running a baseline first on a fresh state directory
+2. reading the current best saved architecture
+3. mutating a constrained research surface while keeping the evaluation harness fixed
+4. running a fixed-budget experiment
+5. advancing only if validation AUC improves, or if the result is effectively tied but the architecture is simpler
 
-This is the MRNet equivalent of the experiment-advance loop in the original `autoresearch` folder.
+This is the MRNet equivalent of the experiment-advance-reset loop in the original `autoresearch` folder.

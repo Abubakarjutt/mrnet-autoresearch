@@ -23,13 +23,22 @@ on:
         required: false
         default: ""
         type: string
+      time_budget_minutes:
+        description: "Per-candidate wall clock budget in minutes"
+        required: true
+        default: "60"
+        type: string
   schedule:
     - cron: "0 3 * * *"
+
+concurrency:
+  group: mrnet-autoresearch-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   run-experiments:
     runs-on: [self-hosted, macOS, ARM64]
-    timeout-minutes: 1800
+    timeout-minutes: 2160
     defaults:
       run:
         shell: bash
@@ -83,7 +92,7 @@ jobs:
 
           ITERATIONS="${{ github.event.inputs.iterations }}"
           if [ -z "$ITERATIONS" ]; then
-            ITERATIONS="3"
+            ITERATIONS="24"
           fi
 
           STATE_DIR="${{ github.event.inputs.state_dir }}"
@@ -91,11 +100,17 @@ jobs:
             STATE_DIR="$HOME/.mrnet_autoresearch"
           fi
 
+          TIME_BUDGET_MINUTES="${{ github.event.inputs.time_budget_minutes }}"
+          if [ -z "$TIME_BUDGET_MINUTES" ]; then
+            TIME_BUDGET_MINUTES="60"
+          fi
+
           cmd=(
             python3 autoresearch_loop.py
             --iterations "$ITERATIONS"
             --state_dir "$STATE_DIR"
             --data_root "${{ steps.dataset.outputs.data_root }}"
+            --time_budget_minutes "$TIME_BUDGET_MINUTES"
             --summary_file "ci_results/summary.md"
           )
 
@@ -106,6 +121,27 @@ jobs:
           fi
           if [ -f "$STATE_DIR/best_config.json" ]; then
             cp "$STATE_DIR/best_config.json" "ci_results/best_config.json"
+          fi
+          if [ -f "$STATE_DIR/latest_run_files.json" ]; then
+            cp "$STATE_DIR/latest_run_files.json" "ci_results/latest_run_files.json"
+            STATE_DIR="$STATE_DIR" python3 - <<'PY'
+import json
+import os
+import shutil
+
+state_dir = os.environ["STATE_DIR"]
+dest_dir = os.path.join("ci_results", "logs")
+manifest_path = os.path.join(state_dir, "latest_run_files.json")
+
+os.makedirs(dest_dir, exist_ok=True)
+with open(manifest_path, "r") as handle:
+    manifest = json.load(handle)
+
+for row in manifest.get("rows", []):
+    log_file = row.get("log_file")
+    if log_file and os.path.isfile(log_file):
+        shutil.copy2(log_file, os.path.join(dest_dir, os.path.basename(log_file)))
+PY
           fi
 
       - name: Publish summary
@@ -130,5 +166,4 @@ jobs:
           name: mrnet-autoresearch-${{ github.run_id }}
           path: |
             MRNet-AI-assited-diagnosis-of-knee-injuries/ci_results
-            MRNet-AI-assited-diagnosis-of-knee-injuries/experiment_logs
           if-no-files-found: warn
