@@ -20,6 +20,6 @@ The system should continuously improve the model architecture by:
 2. reading the current best saved architecture
 3. mutating a constrained research surface while keeping the evaluation harness fixed
 4. running a fixed-budget experiment
-5. advancing only if validation AUC improves, or if the result is effectively tied but the architecture is simpler
+5. advancing only if validation AUC improves, or if the AUC is effectively identical and the architecture is simpler
 
 This is the MRNet equivalent of the experiment-advance-reset loop in the original `autoresearch` folder.
