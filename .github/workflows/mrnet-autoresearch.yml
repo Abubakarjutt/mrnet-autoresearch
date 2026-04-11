@@ -49,6 +49,18 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Cleanup runner diagnostics
+        run: |
+          RUNNER_ROOT="$(cd "${RUNNER_TEMP}/../.." && pwd)"
+          echo "runner_root=$RUNNER_ROOT"
+          python3 cleanup_runner_diag.py \
+            --runner-root "$RUNNER_ROOT" \
+            --keep-runner-logs 3 \
+            --keep-worker-logs 6 \
+            --keep-pages 64 \
+            --keep-blocks 64 \
+            --min-free-gb 20
+
       - name: Verify Python
         run: |
           python3 --version
