@@ -119,6 +119,10 @@ jobs:
           if [ -z "$STATE_DIR" ]; then
             STATE_DIR="$HOME/.mrnet_autoresearch"
           fi
+          mkdir -p "$STATE_DIR/tmp"
+          export TMPDIR="$STATE_DIR/tmp"
+          export TMP="$STATE_DIR/tmp"
+          export TEMP="$STATE_DIR/tmp"
 
           TIME_BUDGET_MINUTES="${{ github.event.inputs.time_budget_minutes }}"
           if [ -z "$TIME_BUDGET_MINUTES" ]; then
