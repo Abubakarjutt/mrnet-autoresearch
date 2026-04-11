@@ -52,6 +52,7 @@ jobs:
       - name: Cleanup runner diagnostics
         run: |
           RUNNER_ROOT="$(cd "${RUNNER_TEMP}/../.." && pwd)"
+          WORKSPACE_ROOT="$(basename "$(dirname "$GITHUB_WORKSPACE")")"
           echo "runner_root=$RUNNER_ROOT"
           python3 cleanup_runner_diag.py \
             --runner-root "$RUNNER_ROOT" \
@@ -59,7 +60,13 @@ jobs:
             --keep-worker-logs 6 \
             --keep-pages 64 \
             --keep-blocks 64 \
-            --min-free-gb 20
+            --keep-temp-files 32 \
+            --keep-runner-command-files 64 \
+            --keep-workflow-files 8 \
+            --temp-max-age-hours 6 \
+            --workspace-max-age-hours 168 \
+            --keep-workspace-root "$WORKSPACE_ROOT" \
+            --min-free-gb 40
 
       - name: Verify Python
         run: |
@@ -96,6 +103,7 @@ jobs:
 
       - name: Run autoresearch batch
         run: |
+          rm -rf ci_results
           mkdir -p ci_results
           RUN_TAG="${{ github.event.inputs.run_tag }}"
           if [ -z "$RUN_TAG" ]; then
@@ -123,10 +131,22 @@ jobs:
             --state_dir "$STATE_DIR"
             --data_root "${{ steps.dataset.outputs.data_root }}"
             --time_budget_minutes "$TIME_BUDGET_MINUTES"
+            --min_free_gb "40"
             --summary_file "ci_results/summary.md"
           )
 
-          "${cmd[@]}"
+          CONSOLE_LOG="ci_results/autoresearch_console.log"
+          set +e
+          "${cmd[@]}" >"$CONSOLE_LOG" 2>&1
+          loop_status=$?
+          set -e
+          if [ "$loop_status" -ne 0 ]; then
+            echo "autoresearch loop failed; last 120 console lines:" >&2
+            tail -n 120 "$CONSOLE_LOG" >&2 || true
+            exit "$loop_status"
+          fi
+          echo "autoresearch loop completed; last 20 console lines:"
+          tail -n 20 "$CONSOLE_LOG" || true
 
           if ! python3 export_ci_artifacts.py --state-dir "$STATE_DIR" --output-dir "ci_results"; then
             echo "warning: failed to export latest autoresearch artifacts" >&2
