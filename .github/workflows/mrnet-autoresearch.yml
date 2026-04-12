@@ -33,7 +33,7 @@ on:
 
 concurrency:
   group: mrnet-autoresearch-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   run-experiments:
@@ -95,11 +95,26 @@ jobs:
           if [ -z "$DATA_ROOT" ]; then
             DATA_ROOT="$PWD/MRNet-v1.0"
           fi
-          if [ ! -d "$DATA_ROOT" ]; then
-            echo "MRNet dataset path not found: $DATA_ROOT" >&2
+
+          CANDIDATES=("$DATA_ROOT" "$DATA_ROOT/MRNet-v1.0")
+          RESOLVED_ROOT=""
+          for candidate in "${CANDIDATES[@]}"; do
+            if [ -f "$candidate/train-abnormal.csv" ] && [ -f "$candidate/valid-abnormal.csv" ] && [ -d "$candidate/train/axial" ] && [ -d "$candidate/valid/axial" ]; then
+              RESOLVED_ROOT="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$RESOLVED_ROOT" ]; then
+            echo "MRNet dataset root is invalid. Checked: ${CANDIDATES[*]}" >&2
+            for candidate in "${CANDIDATES[@]}"; do
+              echo "--- $candidate ---" >&2
+              ls -la "$candidate" >&2 || true
+            done
             exit 1
           fi
-          echo "data_root=$DATA_ROOT" >> "$GITHUB_OUTPUT"
+
+          echo "data_root=$RESOLVED_ROOT" >> "$GITHUB_OUTPUT"
 
       - name: Run autoresearch batch
         run: |
