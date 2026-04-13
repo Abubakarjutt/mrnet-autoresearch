@@ -145,7 +145,7 @@ jobs:
           fi
 
           cmd=(
-            python3 autoresearch_loop.py
+            python3 -u autoresearch_loop.py
             --iterations "$ITERATIONS"
             --state_dir "$STATE_DIR"
             --data_root "${{ steps.dataset.outputs.data_root }}"
@@ -156,8 +156,8 @@ jobs:
 
           CONSOLE_LOG="ci_results/autoresearch_console.log"
           set +e
-          "${cmd[@]}" >"$CONSOLE_LOG" 2>&1
-          loop_status=$?
+          caffeinate -dimsu "${cmd[@]}" 2>&1 | tee "$CONSOLE_LOG"
+          loop_status=${PIPESTATUS[0]}
           set -e
           if [ "$loop_status" -ne 0 ]; then
             echo "autoresearch loop failed; last 120 console lines:" >&2
