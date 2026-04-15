@@ -188,6 +188,7 @@ jobs:
 
       - name: Upload experiment artifacts
         if: ${{ always() && !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: mrnet-autoresearch-${{ github.run_id }}
