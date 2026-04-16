@@ -155,9 +155,17 @@ jobs:
           )
 
           CONSOLE_LOG="ci_results/autoresearch_console.log"
+          : > "$CONSOLE_LOG"
           set +e
-          caffeinate -dimsu "${cmd[@]}" 2>&1 | tee "$CONSOLE_LOG"
-          loop_status=${PIPESTATUS[0]}
+          caffeinate -dimsu "${cmd[@]}" >"$CONSOLE_LOG" 2>&1 &
+          cmd_pid=$!
+          while kill -0 "$cmd_pid" 2>/dev/null; do
+            echo "[$(date -u +%FT%TZ)] autoresearch batch still running"
+            tail -n 5 "$CONSOLE_LOG" || true
+            sleep 60
+          done
+          wait "$cmd_pid"
+          loop_status=$?
           set -e
           if [ "$loop_status" -ne 0 ]; then
             echo "autoresearch loop failed; last 120 console lines:" >&2
