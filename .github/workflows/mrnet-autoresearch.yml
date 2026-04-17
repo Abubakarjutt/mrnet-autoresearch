@@ -126,8 +126,11 @@ jobs:
           fi
 
           ITERATIONS="${{ github.event.inputs.iterations }}"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ -z "$ITERATIONS" ]; then
+            ITERATIONS="${{ vars.MRNET_SCHEDULE_ITERATIONS }}"
+          fi
           if [ -z "$ITERATIONS" ]; then
-            ITERATIONS="24"
+            ITERATIONS="8"
           fi
 
           STATE_DIR="${{ github.event.inputs.state_dir }}"
@@ -140,8 +143,11 @@ jobs:
           export TEMP="$STATE_DIR/tmp"
 
           TIME_BUDGET_MINUTES="${{ github.event.inputs.time_budget_minutes }}"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ -z "$TIME_BUDGET_MINUTES" ]; then
+            TIME_BUDGET_MINUTES="${{ vars.MRNET_SCHEDULE_TIME_BUDGET_MINUTES }}"
+          fi
           if [ -z "$TIME_BUDGET_MINUTES" ]; then
-            TIME_BUDGET_MINUTES="60"
+            TIME_BUDGET_MINUTES="30"
           fi
 
           cmd=(
