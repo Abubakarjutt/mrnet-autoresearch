@@ -147,7 +147,7 @@ jobs:
             TIME_BUDGET_MINUTES="${{ vars.MRNET_SCHEDULE_TIME_BUDGET_MINUTES }}"
           fi
           if [ -z "$TIME_BUDGET_MINUTES" ]; then
-            TIME_BUDGET_MINUTES="30"
+            TIME_BUDGET_MINUTES="60"
           fi
 
           cmd=(
