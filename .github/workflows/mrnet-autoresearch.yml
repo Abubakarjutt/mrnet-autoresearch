@@ -39,15 +39,9 @@ jobs:
   run-experiments:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 2160
-    defaults:
-      run:
-        shell: bash
-        working-directory: MRNet-AI-assited-diagnosis-of-knee-injuries
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Cleanup runner diagnostics
         run: |
@@ -207,5 +201,5 @@ jobs:
         with:
           name: mrnet-autoresearch-${{ github.run_id }}
           path: |
-            MRNet-AI-assited-diagnosis-of-knee-injuries/ci_results
+            ci_results
           if-no-files-found: warn
