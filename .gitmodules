@@ -1,6 +1,3 @@
 [submodule "MRNet-AI-assited-diagnosis-of-knee-injuries"]
 	path = MRNet-AI-assited-diagnosis-of-knee-injuries
 	url = https://github.com/Abubakarjutt/MRNet-AI-assited-diagnosis-of-knee-injuries.git
-[submodule "autoresearch"]
-	path = autoresearch
-	url = https://github.com/karpathy/autoresearch.git
